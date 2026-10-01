@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3-Phase 4-Pole Squirrel-Cage Induction Motor — Precision 3D Digital Twin (MS 631-4, 0.12 kW)</title>
+<style>
+:root{
+  --bg:#04070c; --panel:rgba(9,15,26,.86); --panel2:rgba(13,21,36,.92); --line:rgba(0,229,255,.22);
+  --cyan:#22d3ee; --cyan2:#67e8f9; --txt:#d7e6f2; --dim:#7d93a8; --mono:'JetBrains Mono','Cascadia Mono',Consolas,monospace;
+  --pu:#ff4d6d; --pv:#ffd166; --pw:#4cc9f0;
+  --bName:#34d399; --bProj:#c084fc; --bTorq:#fb923c; --bMod:#22d3ee; --bCon:#f472b6; --bIll:#94a3b8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--txt);
+  font-family:'Segoe UI',system-ui,sans-serif;font-size:13px}
+#viewport{position:absolute;inset:0}
+#viewport canvas{display:block}
+.panel{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  backdrop-filter:blur(10px);box-shadow:0 8px 30px rgba(0,0,0,.55);z-index:10}
+.mono{font-family:var(--mono)}
+.badge{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.5px;padding:1px 6px;
+  border-radius:4px;border:1px solid;margin-left:6px;vertical-align:middle;white-space:nowrap}
+.bN{color:var(--bName);border-color:var(--bName);background:rgba(52,211,153,.08)}
+.bP{color:var(--bProj);border-color:var(--bProj);background:rgba(192,132,252,.08)}
+.bT{color:var(--bTorq);border-color:var(--bTorq);background:rgba(251,146,60,.1)}
+.bM{color:var(--bMod);border-color:var(--bMod);background:rgba(34,211,238,.08)}
+.bC{color:var(--bCon);border-color:var(--bCon);background:rgba(244,114,182,.08)}
+.bI{color:var(--bIll);border-color:var(--bIll);background:rgba(148,163,184,.08)}
+/* ---------- TOP BAR ---------- */
+#topbar{position:absolute;top:0;left:0;right:0;height:64px;display:flex;align-items:center;gap:14px;
+  padding:0 16px;background:linear-gradient(180deg,rgba(8,13,22,.95),rgba(8,13,22,.75));
+  border-bottom:1px solid var(--line);z-index:20;backdrop-filter:blur(8px)}
+#logo{width:38px;height:38px;border-radius:9px;background:linear-gradient(135deg,#0ea5e9,#2563eb);
+  display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;flex:0 0 auto}
+#topbar h1{font-size:16px;font-weight:700;letter-spacing:.2px}
+#topbar .sub{font-size:10.5px;color:var(--dim);font-family:var(--mono);margin-top:2px}
+.chip{font-family:var(--mono);font-size:9.5px;color:var(--cyan2);border:1px solid var(--line);
+  padding:2px 7px;border-radius:4px;background:rgba(34,211,238,.06);white-space:nowrap}
+#cambtns{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+button{font-family:inherit;font-size:11.5px;color:var(--txt);background:rgba(20,30,48,.9);
+  border:1px solid rgba(120,160,190,.25);border-radius:7px;padding:6px 10px;cursor:pointer;transition:.15s}
+button:hover{border-color:var(--cyan);color:var(--cyan2)}
+button.on{background:rgba(34,211,238,.16);border-color:var(--cyan);color:var(--cyan2);
+  box-shadow:0 0 10px rgba(34,211,238,.25) inset}
+button.primary{background:linear-gradient(135deg,#0891b2,#0e7490);border-color:#22d3ee;color:#eafcff;font-weight:600}
+/* ---------- LEFT ---------- */
+#left{top:76px;left:12px;width:298px;bottom:12px;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+#left::-webkit-scrollbar,#bottom::-webkit-scrollbar,.tabbody::-webkit-scrollbar{width:7px;height:7px}
+#left::-webkit-scrollbar-thumb,#bottom::-webkit-scrollbar-thumb,.tabbody::-webkit-scrollbar-thumb{background:#1e3a52;border-radius:4px}
+.card{background:var(--panel2);border:1px solid rgba(90,130,165,.22);border-radius:10px;padding:10px}
+.card h3{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--cyan2);margin-bottom:8px;
+  display:flex;align-items:center;gap:6px}
+.row{display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
+.row:last-child{margin-bottom:0}
+.grow{flex:1}
+.stat{font-family:var(--mono);font-size:12px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px;box-shadow:0 0 8px currentColor}
+input[type=range]{width:100%;accent-color:var(--cyan);height:22px}
+.lbl{font-size:10px;color:var(--dim);font-family:var(--mono)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+/* ---------- RIGHT ---------- */
+#right{top:76px;right:12px;width:346px;max-height:calc(100vh - 320px);overflow-y:auto;padding:12px;
+  display:flex;flex-direction:column;gap:10px}
+#right::-webkit-scrollbar{width:7px}#right::-webkit-scrollbar-thumb{background:#1e3a52;border-radius:4px}
+.telgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.tel{background:rgba(6,12,20,.8);border:1px solid rgba(90,130,165,.2);border-radius:8px;padding:6px 7px}
+.tel .k{font-size:9px;color:var(--dim);font-family:var(--mono);letter-spacing:.4px}
+.tel .v{font-family:var(--mono);font-size:15px;font-weight:700;margin-top:2px}
+.tel .u{font-size:9px;color:var(--dim)}
+.tel2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.tel2 .tel .v{font-size:12.5px}
+.cU{color:var(--pu)}.cV{color:var(--pv)}.cW{color:var(--pw)}.cC{color:var(--cyan2)}.cG{color:#4ade80}.cO{color:#fb923c}.cR{color:#f87171}
+canvas.scope{width:100%;background:rgba(3,8,14,.9);border:1px solid rgba(90,130,165,.2);border-radius:8px}
+/* ---------- BOTTOM ---------- */
+#bottom{left:322px;right:368px;bottom:12px;height:252px;display:flex;flex-direction:column;overflow:hidden}
+#bottom.collapsed{height:36px}
+#tabbar{display:flex;gap:4px;padding:5px 8px;border-bottom:1px solid var(--line);flex:0 0 auto;align-items:center}
+#tabbar button{padding:4px 9px;font-size:10.5px;font-family:var(--mono)}
+#tabbody{flex:1;overflow:auto;padding:10px 12px}
+table.dt{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:11px}
+table.dt td,table.dt th{border:1px solid rgba(90,130,165,.25);padding:4px 7px;text-align:left}
+table.dt th{color:var(--cyan2);font-weight:600;background:rgba(34,211,238,.05)}
+.warn{border:1px solid rgba(251,146,60,.5);background:rgba(251,146,60,.08);border-radius:8px;
+  padding:8px 10px;font-size:11px;margin:8px 0;color:#fcd9a8}
+.note{font-size:10.5px;color:var(--dim);margin:6px 0;line-height:1.5}
+.fact{display:inline-block;background:rgba(34,211,238,.07);border:1px solid var(--line);border-radius:8px;
+  padding:7px 10px;margin:3px;cursor:pointer;font-family:var(--mono);font-size:11px}
+.fact:hover{background:rgba(34,211,238,.16)}
+.fact b{color:var(--cyan2)}
+#ecdetail{background:rgba(6,12,20,.7);border:1px solid rgba(90,130,165,.25);border-radius:8px;
+  padding:8px;font-size:11px;min-height:96px;font-family:var(--mono);line-height:1.6}
+.calc{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.calc .card h3{font-size:10px}
+.calc input{width:74px;background:#0a1220;border:1px solid rgba(120,160,190,.3);color:var(--txt);
+  border-radius:5px;padding:3px 6px;font-family:var(--mono);font-size:11px}
+.calc .out{font-family:var(--mono);color:var(--cyan2);font-size:12px;margin-top:5px}
+#gwrap{position:relative}
+#gtip{position:absolute;pointer-events:none;background:rgba(4,10,18,.95);border:1px solid var(--cyan);
+  border-radius:6px;padding:6px 8px;font-family:var(--mono);font-size:10.5px;display:none;z-index:5;white-space:pre}
+/* ---------- INFO CARD ---------- */
+#info{top:80px;left:50%;transform:translateX(-50%);width:430px;max-height:70vh;overflow:auto;padding:14px;display:none;z-index:30}
+#info h2{font-size:14px;color:var(--cyan2);margin-bottom:8px}
+#info .f{margin-bottom:7px;font-size:11.5px;line-height:1.5}
+#info .f b{color:#9fdcef;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.6px;display:block}
+#infoClose{position:absolute;top:8px;right:8px;padding:2px 8px}
+#err{position:absolute;inset:0;background:#000;color:#f87171;font-family:var(--mono);padding:40px;
+  font-size:14px;display:none;z-index:99;white-space:pre-wrap}
+@media(max-width:1250px){#right{width:300px}#bottom{right:322px}}
+@media(max-width:1000px){#left{width:250px}#bottom{left:272px}}
+</style>
+</head>
+<body>
+<div id="viewport"></div>
+
+<div id="topbar">
+  <div id="logo">⚡</div>
+  <div>
+    <h1>3-Phase Squirrel-Cage Induction Motor <span class="chip">4-POLE</span><span class="chip">IEC 34-9</span><span class="chip">IP55 / INS F</span></h1>
+    <div class="sub">0.12 kW @50 Hz / 0.14 kW @60 Hz • 220/380 V & 250/440 V Δ/Y • 1350/1620 RPM • FRAME MS 631-4 • DEG drive No.0908110455 • Precision 3D Digital Twin</div>
+  </div>
+  <div id="cambtns">
+    <button data-cam="iso" class="on">Isometric</button>
+    <button data-cam="de">Front (DE)</button>
+    <button data-cam="cut">Side Cut</button>
+    <button data-cam="nde">Fan (NDE)</button>
+    <button data-cam="term">Terminal Box</button>
+    <button id="btnAudio">🔇 Motor Audio</button>
+    <button id="btnReset" class="primary">⟲ Reset Camera</button>
+  </div>
+</div>
+
+<div id="left" class="panel">
+  <div class="card">
+    <h3>Motor Status</h3>
+    <div class="row"><span class="stat"><span class="dot" id="stDot" style="color:#94a3b8;background:#94a3b8"></span><span id="stTxt">STOPPED</span></span>
+      <button id="btnSpin" class="primary grow" style="margin-left:10px">▶ Toggle Spin (Start Sequence)</button></div>
+    <div class="lbl" id="stNote">Start/stop uses J·dω/dt = T<sub>e</sub> − T<sub>load</sub> (J illustrative)</div>
+  </div>
+  <div class="card">
+    <h3>📌 Exploded Assembly <span class="grow"></span><span class="mono cC" id="expPct">0%</span></h3>
+    <input type="range" id="sldExp" min="0" max="100" value="0">
+    <div class="row lbl"><span>Assembled (0%)</span><span class="grow"></span><span>Full Disassembly (100%)</span></div>
+  </div>
+  <div class="card">
+    <h3>Visual Modes & Overlays</h3>
+    <div class="grid2">
+      <button id="tglCut">Cutaway View ✂</button>
+      <button id="tglRMF">RMF Flux (3D) 🧲</button>
+      <button id="tglAir">Airflow / Cooling 💨</button>
+      <button id="tglTherm">3D Thermal Hotspots 🌡</button>
+      <button id="tglHot">3D Hotspots 📍</button>
+      <button id="tglWind">Stator Winding </button>
+      <button id="tglCage">Rotor Cage Current ⚡</button>
+      <button id="tglExp">Explain Mode 🎓</button>
+    </div>
+    <div class="row" style="margin-top:6px"><span class="lbl">Phase colours:&nbsp;</span>
+      <span class="lbl cU">■ U</span><span class="lbl cV">■ V</span><span class="lbl cW">■ W</span>
+      <span class="grow"></span><span class="badge bC">CONCEPTUAL overlays</span></div>
+  </div>
+  <div class="card">
+    <h3>Terminal Configuration</h3>
+    <div class="grid2">
+      <button id="btnY" class="on">Star (Y) <span id="vY">380 V</span></button>
+      <button id="btnD">Delta (Δ) <span id="vD">220 V</span></button>
+    </div>
+    <div class="lbl" style="margin-top:6px">Links re-arrange in the 3D terminal box. Nameplate: 220 V→Δ, 380 V→Y (50 Hz); 250 V→Δ, 440 V→Y (60 Hz).</div>
+  </div>
+  <div class="card">
+    <h3>Supply Frequency</h3>
+    <div class="grid2">
+      <button id="btn50" class="on">50 Hz (1500 RPM sync)</button>
+      <button id="btn60">60 Hz (1800 RPM sync)</button>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Operating Mode</h3>
+    <div class="grid2">
+      <button data-mode="noload">1 · No Load</button>
+      <button data-mode="partial">3 · Partial Load</button>
+      <button data-mode="rated" class="on">2 · Rated Load</button>
+      <button data-mode="over">4 · Overload</button>
+      <button data-mode="locked">5 · Locked Rotor</button>
+      <button data-mode="custom">6 · Custom Sim</button>
+    </div>
+    <h3 style="margin-top:10px">Mechanical Load <span class="grow"></span><span class="mono cC" id="ldPct">100%</span></h3>
+    <input type="range" id="sldLoad" min="0" max="125" value="100">
+    <div class="row lbl"><span>No Load (0%)</span><span>Rated (100%)</span><span>Overload (125%)</span></div>
+  </div>
+  <div class="card">
+    <div class="lbl">Visual rotation & waveform time axes are slowed for observation (×0.06 mech / ×0.02 elec). Telemetry always shows TRUE engineering values. Geometry is normalized/illustrative where the supplied sources give no dimensions.</div>
+  </div>
+</div>
+
+<div id="right" class="panel">
+  <div class="card">
+    <h3><span class="dot" style="color:var(--cyan);background:var(--cyan)"></span>LIVE MOTOR TELEMETRY <span class="grow"></span><span class="lbl">real-time model</span></h3>
+    <div class="telgrid">
+      <div class="tel"><div class="k">ROTOR SPEED Nr</div><div class="v cC"><span id="tNr">0</span> <span class="u">RPM</span></div></div>
+      <div class="tel"><div class="k">SYNC SPEED Ns</div><div class="v"><span id="tNs">1500</span> <span class="u">RPM</span></div></div>
+      <div class="tel"><div class="k">SLIP s</div><div class="v cO"><span id="tSlip">10.00</span><span class="u">%</span></div></div>
+    </div>
+    <div class="tel2">
+      <div class="tel"><div class="k">LINE CURRENT <span class="badge bM">MODEL</span></div><div class="v cG"><span id="tI">0.00</span> <span class="u">A</span></div></div>
+      <div class="tel"><div class="k">ELECTRICAL PIN <span class="badge bM">MODEL</span></div><div class="v cG"><span id="tPin">0</span> <span class="u">W</span></div></div>
+      <div class="tel"><div class="k">MECH P = T·ω</div><div class="v cG"><span id="tPm">0</span> <span class="u">W</span></div></div>
+      <div class="tel"><div class="k">TORQUE (sim, source-anchored)</div><div class="v cO"><span id="tT">0.000</span> <span class="u">N·m</span></div></div>
+      <div class="tel"><div class="k">TEMP <span class="badge bM">EST</span></div><div class="v cR"><span id="tTemp">25.0</span> <span class="u">°C</span></div></div>
+      <div class="tel"><div class="k">f / V / CONN</div><div class="v" style="font-size:11.5px"><span id="tF">50</span>Hz <span id="tV">380</span>V <span id="tC">Y</span></div></div>
+    </div>
+    <div class="lbl" style="margin-top:6px">Nameplate rated: 0.86 A (Δ) / 0.50 A (Y) • P<sub>out</sub> 0.12 kW @1350 RPM (50 Hz) <span class="badge bN">NAMEPLATE</span> · Source torque 0.755 N·m @1350 RPM <span class="badge bT">SOURCE TORQUE</span></div>
+  </div>
+  <div class="card">
+    <h3>3-Phase AC Current Waveforms</h3>
+    <canvas id="scope" class="scope" height="110"></canvas>
+    <div class="row lbl" style="margin-top:4px"><span class="cU">■ Phase U</span><span class="cV">■ Phase V</span><span class="cW">■ Phase W</span><span class="grow"></span><span>120° displacement</span></div>
+  </div>
+  <div class="card">
+    <h3>Slip Visualizer — RMF vs Rotor</h3>
+    <canvas id="dial" class="scope" height="150"></canvas>
+    <div class="lbl" id="dialTxt">RMF 1500 RPM • Rotor 0 RPM • Δ 1500 RPM</div>
+  </div>
+</div>
+
+<div id="bottom" class="panel">
+  <div id="tabbar">
+    <button data-tab="data" class="on">Motor Data</button>
+    <button data-tab="wind">Winding</button>
+    <button data-tab="ec">Equivalent Circuit</button>
+    <button data-tab="tq">Torque-Speed</button>
+    <button data-tab="calc">Calculations</button>
+    <button data-tab="test">Tests</button>
+    <button data-tab="src">Sources / Data Consistency</button>
+    <span class="grow"></span><button id="btnCollapse">— collapse</button>
+  </div>
+  <div id="tabbody"></div>
+</div>
+
+<div id="info" class="panel"><button id="infoClose">✕</button><div id="infoBody"></div></div>
+<div id="err"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+"use strict";
+window.onerror=function(m,s,l,c){var e=document.getElementById('err');e.style.display='block';
+  e.textContent='RUNTIME ERROR:\n'+m+'\nline '+l+':'+c+'\n\nIf THREE.js failed to load, check internet access (CDN required for the 3D engine only).';};
+(function(){
+if(typeof THREE==='undefined'){document.getElementById('err').style.display='block';
+  document.getElementById('err').textContent='Three.js could not be loaded from CDN. Connect to the internet and reload.';return;}
+/* ================= SOURCE-OF-TRUTH DATA ================= */
+const SRC={
+ nameplate:{type:'3-Phase Induction Motor, squirrel-cage',frame:'MS 631-4',no:'0908110455',poles:4,ins:'F',ip:'IP55',
+   std:'IEC 34-9',bearDE:'6201 ZZ C3',bearNDE:'6201 ZZ C3',date:'2009.09',weight:'illegible on nameplate (not specified)',
+   f50:{f:50,V:[220,380],kW:0.12,A:[0.86,0.50],rpm:1350},f60:{f:60,V:[250,440],kW:0.14,A:[0.86,0.50],rpm:1620}},
+ torquePdf:{T_rated:0.755,n_rated:1350,T_max:1.715,T_start:1.613},
+ project:{slots:24,ph:3,poles:4,coils:12,coilsPerPh:4,mechDeg:15,elecDeg:30,spanSlots:5,spanElec:150,
+   Kp:0.9659,Kd:0.9659,Kw:0.9330,flux:0.67e-4,condCalc:266,condCounted:265,awg:30,wireIn:0.01002,wireMm:0.25,
+   Rdc:[137,139.5,133],R1:136.2,R2:98.46,X1:32.42,X2:48.63,Xm:583.94,X1Xm:616.36,
+   nl:{V:395,P:96,I:0.37},br:{V:215,P:176,I:0.5},S:329,PF:0.365,connNote:'project states winding Y-connected'}};
+const PH_COL={U:0xff4d6d,V:0xffd66b,W:0x4cc9f0};
+/* ================= STATE ================= */
+const S={freq:50,conn:'Y',running:false,locked:false,mode:'rated',load:1.0,explode:0,
+  cut:false,rmf:false,air:false,therm:false,hot:false,wind:true,cage:false,explain:false,audio:false,
+  w:0,thetaE:0,rotA:0,fanA:0,temp:25,phE:0,dialF:0,dialR:0,mode60:false};
+const VIS_ROT=0.06, VIS_ELEC=0.02, J_INERTIA=0.02, TAMB=25;
+/* ================= DERIVED ENGINEERING ================= */
+function nsOf(f){return 120*f/SRC.nameplate.poles;}
+function vLine(f,conn){return f===50?(conn==='Y'?380:220):(conn==='Y'?440:250);}
+function vPh(f,conn){return S.conn==='Y'?vLine(f,conn)/Math.sqrt(3):vLine(f,conn);}
+function ratedTorqueSrc(f){ if(f===50) return SRC.torquePdf.T_rated;
+  return SRC.nameplate.f60.kW*1000/(2*Math.PI*SRC.nameplate.f60.rpm/60); } // 60 Hz: nameplate-implied (labelled)
+const C={add:(a,b)=>[a[0]+b[0],a[1]+b[1]],mul:(a,b)=>[a[0]*b[0]-a[1]*b[1],a[0]*b[1]+a[1]*b[0]],
+  div:(a,b)=>{const d=b[0]*b[0]+b[1]*b[1];return[(a[0]*b[0]+a[1]*b[1])/d,(a[1]*b[0]-a[0]*b[1])/d];},
+  abs:a=>Math.hypot(a[0],a[1])};
+function ecAt(s,f){ // project equivalent circuit -> torque & PF
+  const k=f/50,R1=SRC.project.R1,X1=SRC.project.X1*k,Xm=SRC.project.Xm*k,R2=SRC.project.R2,X2=SRC.project.X2*k;
+  const V=vPh(f,'Y'), ws=2*Math.PI*nsOf(f)/60;
+  const Z1=[R1,X1],Zm=[0,Xm],Z2=[R2/s,X2];
+  const Zp=C.div(C.mul(Zm,Z2),C.add(Zm,Z2)), Zt=C.add(Z1,Zp);
+  const I1=C.div([V,0],Zt), I2=C.mul(I1,C.div(Zm,C.add(Zm,Z2)));
+  const Pg=3*I2[0]*I2[0]+0; const Pgap=3*(I2[0]*I2[0]+I2[1]*I2[1])*R2/s;
+  return {T:Pgap/ws, pf:Zt[0]/C.abs(Zt), I:C.abs(I1)};
+}
+let EC={}; // per-frequency sampled model
+function buildEC(f){
+  const sr=(nsOf(f)-(f===50?1350:1620))/nsOf(f); const n=240, pts=[]; let sm=0.2,Tm=0;
+  for(let i=0;i<=n;i++){const s=0.0005+0.9995*i/n; const e=ecAt(s,f); pts.push([s,e.T,e.pf]);
+    if(e.T>Tm){Tm=e.T;sm=s;}}
+  const atSr=ecAt(sr,f).T, kN=ratedTorqueSrc(f)/atSr;
+  EC[f]={sr,pts,kN,sMax:sm,TmaxModel:Tm*kN,TstartModel:ecAt(1,f).T*kN,
+    pfAt:s=>{const x=Math.min(1,Math.max(0.0005,s))*n;const i=Math.floor(x);const t=x-i;
+      const a=pts[i],b=pts[Math.min(n,i+1)];return a[2]*(1-t)+b[2]*t;},
+    TAt:s=>{if(s<=0)return 0;const x=Math.min(1,Math.max(0.0005,s))*n;const i=Math.floor(x);const t=x-i;
+      const a=pts[i],b=pts[Math.min(n,i+1)];return (a[1]*(1-t)+b[1]*t)*kN;}};
+}
+buildEC(50);buildEC(60);
+/* current anchors (source-anchored, phase current): no-load test scaled, nameplate rated, blocked-rotor scaled */
+function curAnchors(f){const I0=0.37*(380/395), Ir=0.50, IL=0.5*(380/215);return{I0,Ir,IL};}
+function iPhase(s,f){const a=curAnchors(f),sr=EC[f].sr;
+  if(s<=0)return a.I0; if(s<=sr)return Math.sqrt(a.I0*a.I0+(a.Ir*a.Ir-a.I0*a.I0)*(s/sr)*(s/sr));
+  return a.Ir+(a.IL-a.Ir)*(s-sr)/(1-sr);}
+function iLine(s,f){return iPhase(s,f)*(S.conn==='Y'?1:Math.sqrt(3));}
+/* ================= THREE SETUP ================= */
+const vp=document.getElementById('viewport');
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.localClippingEnabled=true;
+vp.appendChild(renderer.domElement);
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x04070c);
+scene.fog=new THREE.Fog(0x04070c,14,30);
+const camera=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,0.05,100);
+scene.add(new THREE.HemisphereLight(0x9fc7e8,0x0a0d14,0.55));
+const key=new THREE.DirectionalLight(0xffffff,0.95);key.position.set(4,7,4);key.castShadow=true;
+key.shadow.mapSize.set(1024,1024);key.shadow.camera.left=-4;key.shadow.camera.right=4;
+key.shadow.camera.top=4;key.shadow.camera.bottom=-4;scene.add(key);
+const rim=new THREE.DirectionalLight(0x66d9ff,0.35);rim.position.set(-5,3,-5);scene.add(rim);
+const acc=new THREE.PointLight(0x22d3ee,0.35,12);acc.position.set(0,2.4,2.2);scene.add(acc);
+const grid=new THREE.GridHelper(24,48,0x12384a,0x0a1c28);grid.position.y=-0.94;scene.add(grid);
+const gnd=new THREE.Mesh(new THREE.PlaneGeometry(24,24),new THREE.MeshStandardMaterial({color:0x050a10,roughness:0.95}));
+gnd.rotation.x=-Math.PI/2;gnd.position.y=-0.945;gnd.receiveShadow=true;scene.add(gnd);
+/* minimal orbit controls (no external dependency) */
+function Orbit(cam,dom){this.cam=cam;this.dom=dom;this.tgt=new THREE.Vector3(0,0,0);
+  this.gT=this.tgt.clone();this.sph={r:6,th:0.9,ph:1.15};this.g={r:6,th:0.9,ph:1.15};
+  this.drag=0;this.px=0;this.py=0;this.pinch=0;
+  const self=this;
+  dom.addEventListener('contextmenu',e=>e.preventDefault());
+  dom.addEventListener('pointerdown',e=>{self.drag=e.shiftKey||e.button===2?2:1;self.px=e.clientX;self.py=e.clientY;dom.setPointerCapture(e.pointerId);});
+  dom.addEventListener('pointermove',e=>{if(!self.drag)return;const dx=e.clientX-self.px,dy=e.clientY-self.py;self.px=e.clientX;self.py=e.clientY;
+    if(self.drag===1){self.g.th-=dx*0.0055;self.g.ph=Math.min(2.9,Math.max(0.15,self.g.ph-dy*0.0055));}
+    else{const r=self.g.r*0.0012;const right=new THREE.Vector3().setFromMatrixColumn(self.cam.matrix,0);
+      const up=new THREE.Vector3().setFromMatrixColumn(self.cam.matrix,1);
+      self.gT.addScaledVector(right,-dx*r).addScaledVector(up,dy*r);}});
+  addEventListener('pointerup',()=>self.drag=0);
+  dom.addEventListener('wheel',e=>{e.preventDefault();self.g.r=Math.min(16,Math.max(1.4,self.g.r*(1+e.deltaY*0.001)));},{passive:false});
+  dom.addEventListener('touchstart',e=>{if(e.touches.length===2){self.pinch=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);}},{passive:true});
+  dom.addEventListener('touchmove',e=>{if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    if(self.pinch)self.g.r=Math.min(16,Math.max(1.4,self.g.r*self.pinch/d));self.pinch=d;}},{passive:true});
+  this.set=function(pos,tgt){this.gT.copy(tgt);this.tgt.copy(tgt);
+    const o=pos.clone().sub(tgt);this.g.r=this.sph.r=o.length();
+    this.g.ph=this.sph.ph=Math.acos(Math.min(1,Math.max(-1,o.y/this.sph.r)));
+    this.g.th=this.sph.th=Math.atan2(o.x,o.z);};
+  this.update=function(dt){const k=1-Math.pow(0.0015,dt);
+    this.sph.r+=(this.g.r-this.sph.r)*k;this.sph.th+=(this.g.th-this.sph.th)*k;this.sph.ph+=(this.g.ph-this.sph.ph)*k;
+    this.tgt.lerp(this.gT,k);
+    const p=this.sph;this.cam.position.set(this.tgt.x+p.r*Math.sin(p.ph)*Math.sin(p.th),
+      this.tgt.y+p.r*Math.cos(p.ph),this.tgt.z+p.r*Math.sin(p.ph)*Math.cos(p.th));
+    this.cam.lookAt(this.tgt);};}
+const ctrl=new Orbit(camera,renderer.domElement);
+const CAMS={iso:[new THREE.Vector3(3.4,2.1,3.6),new THREE.Vector3(0,0,0)],
+  de:[new THREE.Vector3(4.9,0.5,0.6),new THREE.Vector3(0.4,0,0)],
+  cut:[new THREE.Vector3(0.2,0.7,4.8),new THREE.Vector3(0,0,0)],
+  nde:[new THREE.Vector3(-4.9,0.7,0.7),new THREE.Vector3(-0.5,0,0)],
+  term:[new THREE.Vector3(0.9,3.2,2.0),new THREE.Vector3(0.15,0.7,0)]};
+let tween=null;
+function goCam(name){if(name==='cut'&&!S.cut)setCut(true);
+  const c=CAMS[name];tween={t:0,p0:camera.position.clone(),t0:ctrl.tgt.clone(),p1:c[0],t1:c[1]};
+  document.querySelectorAll('[data-cam]').forEach(b=>b.classList.toggle('on',b.dataset.cam===name));}
+/* ================= MATERIALS ================= */
+const clipPlane=new THREE.Plane(new THREE.Vector3(0,0,-1),0);
+const shellMats=[];
+function mat(o,shell){const m=new THREE.MeshStandardMaterial(o);if(shell){shellMats.push(m);}return m;}
+const M={frame:mat({color:0x6fa8bf,metalness:0.45,roughness:0.5},1),
+  shield:mat({color:0x8fb9cc,metalness:0.55,roughness:0.4},1),
+  cover:mat({color:0x5d8ba0,metalness:0.5,roughness:0.55,transparent:true,alphaMap:grilleTex(),side:THREE.DoubleSide},1),
+  core:mat({color:0x4d5a66,metalness:0.7,roughness:0.55},1),
+  liner:mat({color:0x2b2f36,metalness:0.1,roughness:0.9},1),
+  shaft:mat({color:0xd3dae2,metalness:1.0,roughness:0.18}),
+  steel:mat({color:0x9aa4ae,metalness:0.9,roughness:0.35}),
+  bear:mat({color:0x707a84,metalness:0.95,roughness:0.3}),
+  alu:mat({color:0xc4ccd4,metalness:0.92,roughness:0.28}),
+  fan:mat({color:0x1d232b,metalness:0.2,roughness:0.7}),
+  brass:mat({color:0xd8b13c,metalness:0.95,roughness:0.3}),
+  tbox:mat({color:0x79b0c4,metalness:0.45,roughness:0.5}),
+  rotor:mat({color:0x59636d,metalness:0.75,roughness:0.5})};
+function grilleTex(){const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');
+  x.fillStyle='#000';x.fillRect(0,0,256,256);x.strokeStyle='#fff';x.lineWidth=7;
+  for(let i=0;i<12;i++){const a=i*Math.PI/6;x.beginPath();x.moveTo(128+Math.cos(a)*30,128+Math.sin(a)*30);
+    x.lineTo(128+Math.cos(a)*120,128+Math.sin(a)*120);x.stroke();}
+  for(let r=45;r<=115;r+=24){x.beginPath();x.arc(128,128,r,0,7);x.lineWidth=6;x.stroke();}
+  const t=new THREE.CanvasTexture(c);return t;}
+/* ================= MOTOR GEOMETRY (illustrative normalized dims) ================= */
+const motor=new THREE.Group();scene.add(motor);
+const PARTS=[];
+function reg(obj,dx,dy,dz){PARTS.push({o:obj,b:obj.position.clone(),d:new THREE.Vector3(dx,dy,dz)});}
+function cylX(r,len,m,open){const g=new THREE.CylinderGeometry(r,r,len,48,1,!!open);g.rotateZ(Math.PI/2);
+  const me=new THREE.Mesh(g,m);me.castShadow=me.receiveShadow=true;return me;}
+/* frame + fins + feet */
+const gFrame=new THREE.Group();motor.add(gFrame);
+gFrame.add(cylX(0.62,1.5,M.frame));
+{const fin=new THREE.BoxGeometry(1.5,0.13,0.025);const im=new THREE.InstancedMesh(fin,M.frame,20);
+ const d=new THREE.Object3D();for(let i=0;i<20;i++){const a=-Math.PI*0.15+i*(Math.PI*1.3/19);
+   d.position.set(0,Math.cos(a)*0.68,Math.sin(a)*0.68);d.rotation.set(a,0,0);d.updateMatrix();im.setMatrixAt(i,d.matrix);}
+ im.castShadow=true;gFrame.add(im);}
+const foot1=new THREE.Mesh(new THREE.BoxGeometry(1.35,0.3,0.16),M.frame);foot1.position.set(0,-0.72,0.34);
+const foot2=foot1.clone();foot2.position.z=-0.34;
+const base=new THREE.Mesh(new THREE.BoxGeometry(1.7,0.09,1.0),M.frame);base.position.y=-0.88;
+[foot1,foot2,base].forEach(m=>{m.castShadow=m.receiveShadow=true;gFrame.add(m);});
+/* nameplate label */
+{const c=document.createElement('canvas');c.width=512;c.height=256;const x=c.getContext('2d');
+ x.fillStyle='#d8d8d2';x.fillRect(0,0,512,256);x.fillStyle='#111';x.font='bold 34px monospace';
+ x.fillText('DEG drive  THREE-PHASE IND.MOTOR',12,40);x.font='22px monospace';
+ x.fillText('FRAME MS 631-4   POLE 4P   IP55',12,80);x.fillText('DE/NDE 6201 ZZ C3  INS F',12,112);
+ x.fillText('220/380V 50Hz 0.12kW 0.86/0.50A',12,148);x.fillText('250/440V 60Hz 0.14kW 1350/1620rpm',12,182);
+ x.fillText('CONN Δ/Y  IEC34-9  No.0908110455',12,216);
+ const t=new THREE.CanvasTexture(c);const p=new THREE.Mesh(new THREE.PlaneGeometry(0.62,0.31),
+   new THREE.MeshStandardMaterial({map:t,metalness:0.6,roughness:0.4}));
+ p.position.set(-0.15,0.18,0.625);gFrame.add(p);}
+/* stator core + liners */
+const gCore=new THREE.Group();motor.add(gCore);reg(gCore,0,0.5,0);
+gCore.add(cylX(0.60,1.5,M.core,true));
+const coreIn=cylX(0.36,1.5,M.core,true);coreIn.material=M.core;gCore.add(coreIn);
+for(const sx of[-0.75,0.75]){const r=new THREE.Mesh(new THREE.RingGeometry(0.36,0.60,48),M.core);
+  r.rotation.y=Math.PI/2;r.position.x=sx;gCore.add(r);}
+for(let i=0;i<24;i++){const a=i*Math.PI/12;const l=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.10,0.055),M.liner);
+  l.position.set(0,Math.cos(a)*0.42,Math.sin(a)*0.42);l.rotation.x=-a;gCore.add(l);}
+/* stator winding: 12 single-layer coils, span 5 slots (150° elec), phases U V W per pole */
+const gWind=new THREE.Group();motor.add(gWind);reg(gWind,0,1.0,0);
+const slotAng=i=>i*Math.PI/12;
+const coilPhase=[];for(let p=0;p<4;p++)for(let ph=0;ph<3;ph++)coilPhase.push(['U','V','W'][ph]);
+const condGeo=new THREE.CylinderGeometry(0.045,0.045,1.5,10);condGeo.rotateZ(Math.PI/2);
+const condIM=new THREE.InstancedMesh(condGeo,mat({metalness:0.85,roughness:0.35}),24);
+const slotPhase=new Array(24);
+{const d=new THREE.Object3D(),col=new THREE.Color();let ci=0;
+ for(let p=0;p<4;p++)for(let ph=0;ph<3;ph++){const b=p*6+ph*2;slotPhase[b]=slotPhase[(b+5)%24]=['U','V','W'][ph];}
+ for(let i=0;i<24;i++){const a=slotAng(i);d.position.set(0,Math.cos(a)*0.45,Math.sin(a)*0.45);
+   d.rotation.set(0,0,0);d.updateMatrix();condIM.setMatrixAt(i,d.matrix);
+   col.setHex(PH_COL[slotPhase[i]]);condIM.setColorAt(i,col);}
+ condIM.instanceColor.needsUpdate=true;gWind.add(condIM);
+ for(let cIdx=0;cIdx<12;cIdx++){const p=Math.floor(cIdx/3),ph=cIdx%3,b=p*6+ph*2,b2=(b+5)%24;
+   const col=PH_COL[['U','V','W'][ph]];
+   for(const sgn of[1,-1]){const pts=[];const a1=slotAng(b),a2=slotAng(b2);
+     let da=a2-a1;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;
+     for(let t=0;t<=6;t++){const u=t/6,a=a1+da*u,rr=0.45+0.10*Math.sin(Math.PI*u);
+       pts.push(new THREE.Vector3(sgn*(0.75+0.22*Math.sin(Math.PI*u)),Math.cos(a)*rr,Math.sin(a)*rr));}
+     const tube=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),24,0.034,8),
+       mat({color:col,metalness:0.8,roughness:0.35,emissive:col,emissiveIntensity:0.12}));
+     gWind.add(tube);}}}
+/* rotor assembly */
+const gRotor=new THREE.Group();motor.add(gRotor);reg(gRotor,1.35,0,0);
+const shaft=cylX(0.06,2.5,M.shaft);shaft.position.x=0.3;gRotor.add(shaft);
+const rcore=new THREE.Group();gRotor.add(rcore);
+rcore.add(cylX(0.34,1.2,M.rotor));
+const barGeo=new THREE.CylinderGeometry(0.022,0.022,1.26,8);barGeo.rotateZ(Math.PI/2);
+const barIM=new THREE.InstancedMesh(barGeo,mat({metalness:0.9,roughness:0.3}),24);
+{const d=new THREE.Object3D();for(let i=0;i<24;i++){const a=i*Math.PI/12;
+  d.position.set(0,Math.cos(a)*0.30,Math.sin(a)*0.30);d.rotation.set(0,0,0);d.updateMatrix();barIM.setMatrixAt(i,d.matrix);}
+ barIM.instanceColor=null;gRotor.add(barIM);}
+for(const sx of[-0.64,0.64]){const er=new THREE.Mesh(new THREE.TorusGeometry(0.30,0.045,10,32),M.alu);
+  er.rotation.y=Math.PI/2;er.position.x=sx;gRotor.add(er);}
+const mark=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.10,0.03),mat({color:0xff8800,emissive:0xff6600,emissiveIntensity:0.7}));
+mark.position.set(0.68,0.33,0);gRotor.add(mark);
+/* bearings */
+function bearing(x){const g=new THREE.Group();const o=new THREE.Mesh(new THREE.TorusGeometry(0.11,0.05,10,24),M.bear);
+  o.rotation.y=Math.PI/2;g.add(o);const i2=new THREE.Mesh(new THREE.TorusGeometry(0.05,0.03,8,20),M.steel);
+  i2.rotation.y=Math.PI/2;g.add(i2);g.position.x=x;motor.add(g);return g;}
+const gBDE=bearing(0.86);reg(gBDE,0.78,0,0);
+const gBNDE=bearing(-0.86);reg(gBNDE,-0.45,0,0);
+/* end shields */
+function shield(x){const g=new THREE.Group();g.add(cylX(0.62,0.16,M.shield));
+  const boss=cylX(0.17,0.12,M.shield);boss.position.x=x>0?0.1:-0.1;g.add(boss);
+  g.children.forEach(m=>m.castShadow=true);g.position.x=x;motor.add(g);return g;}
+const gSDE=shield(0.85);reg(gSDE,0.5,0,0);
+const gSNDE=shield(-0.85);reg(gSNDE,-0.68,0,0);
+/* fan + fan cover */
+const gFan=new THREE.Group();motor.add(gFan);reg(gFan,-1.05,0,0);
+{const hub=cylX(0.13,0.14,M.fan);hub.position.x=-1.05;gFan.add(hub);
+ for(let i=0;i<8;i++){const a=i*Math.PI/4;const b=new THREE.Mesh(new THREE.BoxGeometry(0.10,0.36,0.02),M.fan);
+   b.position.set(-1.05,Math.cos(a)*0.30,Math.sin(a)*0.30);b.rotation.x=-a+0.5;b.castShadow=true;gFan.add(b);}}
+const gCover=new THREE.Group();motor.add(gCover);reg(gCover,-1.55,0,0);
+{const c=cylX(0.66,0.40,M.cover,true);c.position.x=-1.12;gCover.add(c);
+ const disc=new THREE.Mesh(new THREE.CircleGeometry(0.66,48),M.cover);disc.rotation.y=-Math.PI/2;
+ disc.position.x=-1.32;gCover.add(disc);
+ const rim2=new THREE.Mesh(new THREE.TorusGeometry(0.66,0.03,8,40),M.shield);rim2.rotation.y=Math.PI/2;
+ rim2.position.x=-0.93;gCover.add(rim2);}
+/* terminal box */
+const gTerm=new THREE.Group();motor.add(gTerm);reg(gTerm,0,1.15,0);
+{const bx=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.34,0.5),M.tbox);bx.position.set(0.15,0.80,0);bx.castShadow=true;
+ const lid=new THREE.Mesh(new THREE.BoxGeometry(0.59,0.05,0.54),M.tbox);lid.position.set(0.15,0.99,0);
+ const gland=cylX(0.05,0.12,M.brass);gland.rotation.z=0;gland.position.set(0.45,0.8,0);gland.rotation.y=Math.PI/2;
+ gTerm.add(bx,lid,gland);
+ window.TPOSTS=[];const xs=[0.0,0.15,0.30],zs=[-0.13,0.13];
+ for(const z of zs)for(const x of xs){const p=new THREE.Mesh(new THREE.CylinderGeometry(0.024,0.024,0.12,10),M.brass);
+   p.position.set(x,1.02,z);gTerm.add(p);TPOSTS.push(p);}
+ window.JY=new THREE.Mesh(new THREE.BoxGeometry(0.34,0.02,0.05),M.brass);JY.position.set(0.15,1.08,0.13);gTerm.add(JY);
+ window.JD=[];for(const x of xs){const j=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.02,0.30),M.brass);
+   j.position.set(x,1.08,0);gTerm.add(j);JD.push(j);}}
+/* ================= OVERLAY GROUPS ================= */
+/* RMF */
+const gRMF=new THREE.Group();gRMF.visible=false;motor.add(gRMF);
+const rmfMain=new THREE.ArrowHelper(new THREE.Vector3(0,1,0),new THREE.Vector3(0,0,0),0.62,0x22d3ee,0.16,0.09);
+gRMF.add(rmfMain);
+const phArrows=['U','V','W'].map((p,i)=>{const a=new THREE.ArrowHelper(new THREE.Vector3(0,1,0),
+  new THREE.Vector3(0,0,0),0.4,PH_COL[p],0.12,0.07);a.userData.ax=i*2*Math.PI/3;gRMF.add(a);return a;});
+{const N=140,pos=new Float32Array(N*3),col=new Float32Array(N*3);
+ for(let i=0;i<N;i++){const a=i/N*2*Math.PI;pos[i*3]=0;pos[i*3+1]=Math.cos(a)*0.44;pos[i*3+2]=Math.sin(a)*0.44;}
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+ g.setAttribute('color',new THREE.BufferAttribute(col,3));
+ window.rmfPts=new THREE.Points(g,new THREE.PointsMaterial({size:0.05,vertexColors:true,transparent:true,opacity:0.9,blending:THREE.AdditiveBlending,depthWrite:false}));
+ gRMF.add(rmfPts);window.rmfN=N;}
+/* airflow */
+const gAir=new THREE.Group();gAir.visible=false;motor.add(gAir);
+const AIRN=320,airPos=new Float32Array(AIRN*3),airV=[];
+for(let i=0;i<AIRN;i++){airV.push({x:-1.35+Math.random()*2.7,a:Math.random()*2*Math.PI,r:0.68+Math.random()*0.14});
+  airPos[i*3]=airV[i].x;airPos[i*3+1]=Math.cos(airV[i].a)*airV[i].r;airPos[i*3+2]=Math.sin(airV[i].a)*airV[i].r;}
+const airGeo=new THREE.BufferGeometry();airGeo.setAttribute('position',new THREE.BufferAttribute(airPos,3));
+gAir.add(new THREE.Points(airGeo,new THREE.PointsMaterial({color:0x7fe7ff,size:0.035,transparent:true,opacity:0.75,blending:THREE.AdditiveBlending,depthWrite:false})));
+/* thermal sprites */
+const gTherm=new THREE.Group();gTherm.visible=false;motor.add(gTherm);
+function glowTex(){const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');
+  const g=x.createRadialGradient(32,32,2,32,32,30);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(1,'rgba(255,255,255,0)');
+  x.fillStyle=g;x.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);}
+const GT=glowTex();
+const hotSpots3D=[{p:[0.85,0.1,0],o:8,n:'Winding end (DE)'},{p:[-0.85,0.1,0],o:8,n:'Winding end (NDE)'},
+  {p:[0,0.2,0],o:6,n:'Rotor cage'},{p:[0.86,-0.1,0],o:4,n:'Bearing DE'},{p:[-0.86,-0.1,0],o:4,n:'Bearing NDE'}]
+  .map(h=>{const s=new THREE.Sprite(new THREE.SpriteMaterial({map:GT,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));
+    s.position.set(...h.p);s.scale.setScalar(0.4);gTherm.add(s);return{...h,s};});
+/* hotspot markers */
+const gHot=new THREE.Group();gHot.visible=false;motor.add(gHot);
+const COMP={
+ statorCore:{n:'Stator Core',f:'Carries the rotating magnetic field and provides the low-reluctance magnetic path between the 4 poles.',m:'Laminated electrical steel (grade not specified in supplied data)',r:'24 slots • slot pitch 15° mech / 30° elec',s:'Project (1).pdf',e:'mech°/slot = 360/24 = 15°; elec° = 15°×P/2 = 30°',w:'Laminations limit eddy-current & hysteresis losses.'},
+ winding:{n:'Stator Winding (3φ, 4-pole)',f:'Creates the rotating magnetic field when fed with 3-phase AC.',m:'Copper magnet wire, 30 AWG (0.01002 in ≈ 0.25 mm)',r:'12 coils • 4 coils/phase • span 5 slots = 150° elec (short-pitched) • ≈266 conductors/slot (calc) vs 265 counted',s:'Project (1).pdf',e:'Kp=sin(150°/2)=0.9659; Kd=0.9659; Kw=Kp·Kd=0.9330',w:'Short pitch reduces harmonics, reduces eddy/hysteresis loss, improves waveform sinusoidality.'},
+ rotor:{n:'Squirrel-Cage Rotor',f:'Converts electromagnetic interaction into mechanical torque; rotates at Nr < Ns (slip).',m:'Laminated steel core + aluminium cage (typical; not specified)',r:'4-pole cage • rated 1350 RPM @50 Hz • slip 10%',s:'Nameplate / calculated',e:'s=(Ns−Nr)/Ns=(1500−1350)/1500=10%',w:'Slip is required to induce rotor current and torque.'},
+ cage:{n:'Squirrel Cage (bars + end rings)',f:'Closed induced-current circuit — no external electrical connection.',m:'Aluminium (typical; not specified in supplied data)',r:'24 bars shown — ILLUSTRATIVE count (not specified)',s:'Conceptual induced rotor-current visualization',e:'I₂ induced by slip frequency f₂ = s·f',w:'End rings short all bars → self-closed winding.'},
+ shaft:{n:'Shaft (DE extends)',f:'Transmits mechanical torque to the load.',m:'Polished steel',r:'DE = drive end (6201 ZZ C3 side)',s:'Nameplate (bearing seats)',e:'ω = 2πN/60',w:'Keyed/drive end delivers rated 0.12 kW.'},
+ bearDE:{n:'Bearing DE',f:'Supports shaft at drive end; carries radial load.',m:'Steel',r:'6201 ZZ C3',s:'Nameplate',e:'—',w:'ZZ shields + C3 clearance for thermal margin.'},
+ bearNDE:{n:'Bearing NDE',f:'Supports shaft at non-drive end; locates fan.',m:'Steel',r:'6201 ZZ C3',s:'Nameplate',e:'—',w:'Same type both ends per nameplate.'},
+ fan:{n:'Cooling Fan (shaft-mounted)',f:'Shaft-mounted fan drives air over the finned frame (TEFC).',m:'Polymer/metal (not specified)',r:'Rotates with rotor at Nr',s:'Conceptual airflow model',e:'airflow ∝ fan speed',w:'IP55 totally-enclosed cooling path.'},
+ cover:{n:'Fan Cover',f:'Guards fan and directs cooling air along fins.',m:'Sheet steel (typical)',r:'IP55 enclosure',s:'Nameplate (IP55)',e:'—',w:'Prevents ingress; directs airflow.'},
+ tbox:{n:'Terminal Box',f:'Houses 6 terminals (U1 V1 W1 / U2 V2 W2) and Δ/Y links.',m:'Steel box, brass terminals',r:'Δ: 220 V (50 Hz) / 250 V (60 Hz); Y: 380 V / 440 V',s:'Nameplate',e:'Y: Vph=VL/√3; Δ: Vph=VL',w:'Links reconfigure winding connection without rewiring.'},
+ frame:{n:'Frame / Housing',f:'Structural + magnetic-mechanical support; finned TEFC surface; feet.',m:'Painted metal',r:'Frame MS 631-4 • IP55',s:'Nameplate',e:'—',w:'Fins increase cooling surface.'},
+ gap:{n:'Air Gap',f:'Separates rotor from stator bore; crossed by gap flux.',m:'Air',r:'Dimension NOT specified in supplied sources — illustrative geometry',s:'Illustrative',e:'small gap → better PF',w:'Mechanically unavoidable, magnetically critical.'}};
+const HOTMAP=[['statorCore',[0,0.35,0.62]],['winding',[0.9,0.42,0.25]],['rotor',[0.2,0.36,0]],['cage',[-0.64,0.32,0.1]],
+ ['shaft',[1.35,0.06,0]],['bearDE',[0.86,0.16,0.05]],['bearNDE',[-0.86,0.16,0.05]],['fan',[-1.05,0.45,0]],
+ ['cover',[-1.2,0.6,0.2]],['tbox',[0.15,1.05,0.2]],['frame',[-0.3,0.55,0.4]],['gap',[0.55,0.355,0.02]]];
+const hotSprites=[];
+HOTMAP.forEach((h,i)=>{const c=document.createElement('canvas');c.width=128;c.height=64;const x=c.getContext('2d');
+  x.fillStyle='rgba(34,211,238,.92)';x.beginPath();x.arc(24,32,16,0,7);x.fill();
+  x.fillStyle='#04222b';x.font='bold 18px monospace';x.fillText(String(i+1),18,38);
+  x.fillStyle='rgba(34,211,238,.85)';x.font='13px monospace';x.fillText(COMP[h[0]].n.slice(0,14),44,37);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false,transparent:true}));
+  sp.position.set(...h[1]);sp.scale.set(0.5,0.25,1);sp.userData.key=h[0];gHot.add(sp);hotSprites.push(sp);});
+/* ================= INTERACTION: raycast ================= */
+const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();
+renderer.domElement.addEventListener('click',ev=>{
+  mouse.x=(ev.clientX/innerWidth)*2-1;mouse.y=-(ev.clientY/innerHeight)*2+1;
+  ray.setFromCamera(mouse,camera);
+  const hits=ray.intersectObjects(hotSprites,false);
+  if(hits.length){showInfo(hits[0].object.userData.key);return;}
+  if(S.explain){const h2=ray.intersectObjects(motor.children,true);
+    if(h2.length){let o=h2[0].object,key=null;
+      const inG=(g)=>{let p=o;while(p){if(p===g)return true;p=p.parent;}return false;};
+      if(inG(gWind)||o===condIM)key='winding';else if(inG(gRotor))key= inG(gRotor)&&h2[0].object.geometry===barGeo?'cage':'rotor';
+      else if(inG(gCore))key='statorCore';else if(inG(gTerm))key='tbox';else if(inG(gFan)||inG(gCover))key='fan';
+      else if(inG(gSDE)||inG(gSNDE))key='bearDE';else key='frame';
+      showInfo(key);}}});
+function showInfo(k){const c=COMP[k];const el=document.getElementById('info');
+  document.getElementById('infoBody').innerHTML=
+   '<h2> '+c.n+'</h2>'+
+   '<div class="f"><b>Function — what it does</b>'+c.f+'</div>'+
+   '<div class="f"><b>Why it exists</b>'+c.w+'</div>'+
+   '<div class="f"><b>Material</b>'+c.m+'</div>'+
+   '<div class="f"><b>Motor-specific value</b>'+c.r+'</div>'+
+   '<div class="f"><b>Relevant equation</b><span class="mono">'+c.e+'</span></div>'+
+   '<div class="f"><b>Source</b>'+c.s+' '+(c.s.includes('Nameplate')?'<span class="badge bN">NAMEPLATE</span>':c.s.includes('Project')?'<span class="badge bP">PROJECT-DERIVED</span>':c.s.includes('Conceptual')||c.s.includes('Conceptual')?'<span class="badge bC">CONCEPTUAL</span>':c.s.includes('Illustrative')?'<span class="badge bI">ILLUSTRATIVE</span>':'<span class="badge bM">MODELLED</span>')+'</div>'+
+   (S.explain?'<div class="f"><b>Explain mode</b>Live operating point: Nr='+fmt0(S.w*60/(2*Math.PI))+' RPM, s='+((nsOf(S.freq)-S.w*60/(2*Math.PI))/nsOf(S.freq)*100).toFixed(2)+'% — this component is operating at the displayed telemetry condition.</div>':'');
+  el.style.display='block';}
+document.getElementById('infoClose').onclick=()=>document.getElementById('info').style.display='none';
+/* ================= UI WIRING ================= */
+const $=id=>document.getElementById(id);
+function fmt0(v){return Math.round(v).toString();}
+function setConn(c){S.conn=c;$('btnY').classList.toggle('on',c==='Y');$('btnD').classList.toggle('on',c==='Δ');
+  JY.visible=(c==='Y');JD.forEach(j=>j.visible=(c==='Δ'));refreshVoltLabels();}
+function refreshVoltLabels(){$('vY').textContent=(S.freq===50?380:440)+' V';$('vD').textContent=(S.freq===50?220:250)+' V';}
+function setFreq(f){S.freq=f;$('btn50').classList.toggle('on',f===50);$('btn60').classList.toggle('on',f===60);
+  $('tNs').textContent=nsOf(f);refreshVoltLabels();drawGraph();}
+function setCut(v){S.cut=v;$('tglCut').classList.toggle('on',v);
+  shellMats.forEach(m=>{m.clippingPlanes=v?[clipPlane]:null;m.needsUpdate=true;});}
+function setMode(m){S.mode=m;document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));
+  S.locked=(m==='locked');
+  if(m==='noload')setLoad(0);if(m==='partial')setLoad(0.5);if(m==='rated')setLoad(1.0);if(m==='over')setLoad(1.25);
+  if(m!=='custom'&&m!=='locked'&&!S.running)toggleSpin(true);
+  if(m==='locked')S.running=true;}
+function setLoad(v){S.load=v;$('sldLoad').value=Math.round(v*100);$('ldPct').textContent=Math.round(v*100)+'%';}
+function toggleSpin(force){S.running=(force===true)?true:!S.running;if(!S.running)S.locked=false;}
+$('btnSpin').onclick=()=>toggleSpin();
+$('sldLoad').oninput=e=>{setLoad(e.target.value/100);if(!['noload','partial','rated','over'].includes('x')){}
+  if(Math.abs(S.load-0)<.01||Math.abs(S.load-.5)<.01||Math.abs(S.load-1)<.01||Math.abs(S.load-1.25)<.01){}
+  setModeNoLoad('custom');};
+function setModeNoLoad(m){S.mode=m;document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));S.locked=false;}
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+$('sldExp').oninput=e=>{S.explode=e.target.value/100;$('expPct').textContent=e.target.value+'%';
+  PARTS.forEach(p=>p.o.position.copy(p.b).addScaledVector(p.d,S.explode));};
+$('tglCut').onclick=()=>setCut(!S.cut);
+$('tglRMF').onclick=e=>{S.rmf=!S.rmf;gRMF.visible=S.rmf;e.target.classList.toggle('on',S.rmf);};
+$('tglAir').onclick=e=>{S.air=!S.air;gAir.visible=S.air;e.target.classList.toggle('on',S.air);};
+$('tglTherm').onclick=e=>{S.therm=!S.therm;gTherm.visible=S.therm;e.target.classList.toggle('on',S.therm);};
+$('tglHot').onclick=e=>{S.hot=!S.hot;gHot.visible=S.hot;e.target.classList.toggle('on',S.hot);};
+$('tglWind').onclick=e=>{S.wind=!S.wind;gWind.visible=S.wind;e.target.classList.toggle('on',!S.wind);};
+$('tglWind').classList.add('on');
+$('tglCage').onclick=e=>{S.cage=!S.cage;e.target.classList.toggle('on',S.cage);
+  M.rotor.transparent=S.cage;M.rotor.opacity=S.cage?0.22:1;M.rotor.needsUpdate=true;};
+$('tglExp').onclick=e=>{S.explain=!S.explain;e.target.classList.toggle('on',S.explain);};
+$('btnY').onclick=()=>setConn('Y');$('btnD').onclick=()=>setConn('Δ');
+$('btn50').onclick=()=>setFreq(50);$('btn60').onclick=()=>setFreq(60);
+document.querySelectorAll('[data-cam]').forEach(b=>b.onclick=()=>goCam(b.dataset.cam));
+$('btnReset').onclick=()=>goCam('iso');
+$('btnCollapse').onclick=()=>{const b=$('bottom');b.classList.toggle('collapsed');
+  $('btnCollapse').textContent=b.classList.contains('collapsed')?'+ expand':'— collapse';};
+/* ================= AUDIO ================= */
+let AC=null,audioNodes=null;
+$('btnAudio').onclick=()=>{S.audio=!S.audio;$('btnAudio').classList.toggle('on',S.audio);
+  $('btnAudio').textContent=(S.audio?'🔊':'🔇')+' Motor Audio';
+  if(S.audio&&!AC){AC=new (window.AudioContext||window.webkitAudioContext)();
+    const g=AC.createGain();g.gain.value=0;g.connect(AC.destination);
+    const o1=AC.createOscillator();o1.type='sawtooth';const g1=AC.createGain();g1.gain.value=0.5;
+    const o2=AC.createOscillator();o2.type='sine';const g2=AC.createGain();g2.gain.value=0.35;
+    const nb=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate);const d=nb.getChannelData(0);
+    for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+    const ns=AC.createBufferSource();ns.buffer=nb;ns.loop=true;
+    const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=700;const g3=AC.createGain();g3.gain.value=0.25;
+    o1.connect(g1).connect(g);o2.connect(g2).connect(g);ns.connect(bp).connect(g3).connect(g);
+    o1.start();o2.start();ns.start();audioNodes={g,o1,o2,ns,bp,g1,g2,g3};}
+  if(AC&&AC.state==='suspended')AC.resume();};
+function updAudio(){if(!AC||!audioNodes)return;const t=AC.currentTime;
+  const rpm=S.w*60/(2*Math.PI),f=S.freq;
+  audioNodes.g.gain.setTargetAtTime(S.audio?(S.running?0.05+0.10*S.load:0.0):0,t,0.2);
+  audioNodes.o1.frequency.setTargetAtTime(2*f*(0.3+0.7*rpm/nsOf(f)),t,0.1);
+  audioNodes.o2.frequency.setTargetAtTime(f*(0.5+0.5*rpm/nsOf(f))*4,t,0.1);
+  audioNodes.bp.frequency.setTargetAtTime(300+900*rpm/nsOf(f),t,0.2);}
+/* ================= BOTTOM TABS ================= */
+const TABS={};
+TABS.data=`<div style="display:flex;gap:14px;flex-wrap:wrap">
+<div style="flex:1;min-width:330px"><h3 class="mono" style="color:var(--cyan2)">NAMEPLATE — actual motor (DEG drive) <span class="badge bN">NAMEPLATE DATA</span></h3>
+<table class="dt"><tr><th>Parameter</th><th>50 Hz</th><th>60 Hz</th></tr>
+<tr><td>Voltage Δ / Y</td><td>220 / 380 V</td><td>250 / 440 V</td></tr>
+<tr><td>Output</td><td>0.12 kW</td><td>0.14 kW</td></tr>
+<tr><td>Current Δ / Y</td><td>0.86 / 0.50 A</td><td>0.86 / 0.50 A</td></tr>
+<tr><td>Speed</td><td>1350 RPM</td><td>1620 RPM</td></tr>
+<tr><td>Connection</td><td colspan="2">Δ / Y</td></tr></table>
+<table class="dt" style="margin-top:6px"><tr><td>Type</td><td>3-phase induction, squirrel-cage</td></tr>
+<tr><td>Frame / No.</td><td>MS 631-4 / 0908110455</td></tr><tr><td>Poles</td><td>4P</td></tr>
+<tr><td>Insulation / IP</td><td>Class F / IP55</td></tr><tr><td>Bearings DE / NDE</td><td>6201 ZZ C3 / 6201 ZZ C3</td></tr>
+<tr><td>Standard / Date</td><td>IEC 34-9 / 2009.09</td></tr><tr><td>Weight</td><td>illegible on nameplate — not specified</td></tr></table></div>
+<div style="flex:1;min-width:300px"><h3 class="mono" style="color:var(--cyan2)">DERIVED RATINGS</h3>
+<table class="dt"><tr><td>Ns = 120f/P</td><td>1500 RPM (50 Hz) • 1800 RPM (60 Hz) <span class="badge bM">CALC</span></td></tr>
+<tr><td>Rated slip 50 Hz</td><td>(1500−1350)/1500 = 10.00 % <span class="badge bM">CALC</span></td></tr>
+<tr><td>Rated slip 60 Hz</td><td>(1800−1620)/1800 = 10.00 % <span class="badge bM">CALC</span></td></tr>
+<tr><td>Torque @1350 RPM</td><td>0.755 N·m <span class="badge bT">SOURCE TORQUE (torqe.pdf)</span></td></tr>
+<tr><td>Torque from nameplate P/ω</td><td>120 W / 141.37 rad/s = 0.849 N·m <span class="badge bM">CALC</span></td></tr>
+<tr><td>T_max / T_start</td><td>1.715 / 1.613 N·m <span class="badge bT">SOURCE TORQUE</span></td></tr></table>
+<div class="warn">⚠ DATA CONSISTENCY: source torque 0.755 N·m and nameplate-power-implied torque 0.849 N·m differ. BOTH are preserved — neither is silently reconciled. See Sources tab.</div></div></div>`;
+TABS.wind=`<div style="display:flex;gap:14px;flex-wrap:wrap">
+<div style="flex:1;min-width:320px"><h3 class="mono" style="color:var(--cyan2)">WINDING DESIGN <span class="badge bP">PROJECT-DERIVED</span></h3>
+<table class="dt"><tr><td>Stator slots</td><td>24</td></tr><tr><td>Phases / Poles</td><td>3 / 4</td></tr>
+<tr><td>Total coils / coils per phase</td><td>12 / 4</td></tr>
+<tr><td>Mechanical angle per slot</td><td>360/24 = 15°</td></tr>
+<tr><td>Electrical angle per slot</td><td>180×4/24 = 30°</td></tr>
+<tr><td>Coil span</td><td>5 slot pitches = 150° electrical → SHORT-PITCHED (full pitch = 180°)</td></tr>
+<tr><td>Conductors per slot</td><td>≈266 calculated <span class="badge bP">PROJECT</span> vs 265 original counted <span class="badge bN">COUNTED</span> — both preserved</td></tr>
+<tr><td>Wire</td><td>30 AWG copper, 0.01002 in ≈ 0.25 mm</td></tr>
+<tr><td>Max flux Φ</td><td>0.67 × 10⁻⁴ Wb <span class="badge bP">CALCULATED / PROJECT VALUE</span></td></tr></table>
+<div class="note">Short-pitch benefits per project: (1) reduces harmonics, (2) reduces eddy-current & hysteresis losses, (3) improved sinusoidal waveform.</div></div>
+<div style="flex:1;min-width:300px"><h3 class="mono" style="color:var(--cyan2)">WINDING FACTORS (click)</h3>
+<span class="fact" data-f="kp"><b>Kp</b> = sin(150°/2) = 0.9659</span>
+<span class="fact" data-f="kd"><b>Kd</b> = sin(qγ/2)/(q·sin(γ/2)) = 0.9659</span>
+<span class="fact" data-f="kw"><b>Kw</b> = Kp·Kd = 0.9330</span>
+<div id="fdetail" class="note">Click a factor for its full definition.</div>
+<h3 class="mono" style="color:var(--cyan2)">PHASE / COIL MAP (single-layer, 24 slots)</h3>
+<div class="mono" style="font-size:10.5px;line-height:1.9" id="slotmap"></div></div></div>`;
+TABS.ec=`<div style="display:flex;gap:14px;flex-wrap:wrap">
+<div style="flex:1.2;min-width:380px"><h3 class="mono" style="color:var(--cyan2)">PER-PHASE EQUIVALENT CIRCUIT <span class="badge bP">PROJECT-DERIVED</span> — click elements</h3>
+<svg id="ecsvg" viewBox="0 0 560 210" style="width:100%;background:rgba(4,10,18,.7);border:1px solid rgba(90,130,165,.25);border-radius:8px">
+<g stroke="#7dd3fc" stroke-width="2" fill="none">
+<path d="M20 60 H70"/><path d="M130 60 H180"/><path d="M240 60 H300"/><path d="M300 60 H360"/><path d="M420 60 H470"/>
+<path d="M300 60 V100"/><path d="M300 150 V180"/><path d="M20 180 H470"/><path d="M470 60 V180"/>
+<path d="M360 60 H360"/></g>
+<g data-ec="R1" style="cursor:pointer"><rect x="70" y="48" width="60" height="24" fill="#123" stroke="#22d3ee"/><text x="82" y="65" fill="#67e8f9" font-size="13" font-family="monospace">R1</text></g>
+<g data-ec="X1" style="cursor:pointer"><rect x="180" y="48" width="60" height="24" fill="#123" stroke="#22d3ee"/><text x="192" y="65" fill="#67e8f9" font-size="13" font-family="monospace">jX1</text></g>
+<g data-ec="Xm" style="cursor:pointer"><rect x="270" y="100" width="60" height="50" fill="#123" stroke="#c084fc"/><text x="280" y="130" fill="#d8b4fe" font-size="13" font-family="monospace">jXm</text></g>
+<g data-ec="R2" style="cursor:pointer"><rect x="360" y="48" width="60" height="24" fill="#123" stroke="#fb923c"/><text x="366" y="65" fill="#fdba74" font-size="12" font-family="monospace" id="r2s">R2/s</text></g>
+<g data-ec="X2" style="cursor:pointer"><rect x="430" y="48" width="50" height="24" fill="#123" stroke="#fb923c"/><text x="440" y="65" fill="#fdba74" font-size="12" font-family="monospace">jX2</text></g>
+<text x="20" y="35" fill="#7d93a8" font-size="11" font-family="monospace">V1 (phase)</text>
+<text x="20" y="200" fill="#7d93a8" font-size="11" font-family="monospace">return</text></svg>
+<div class="note">R2/s value updates live with slip. Topology: R1+jX1 in series with [ jXm ∥ (R2/s + jX2) ].</div></div>
+<div style="flex:1;min-width:300px"><h3 class="mono" style="color:var(--cyan2)">PARAMETERS & TEST BASIS</h3>
+<table class="dt"><tr><td>R1</td><td>136.2 Ω (avg of RA 137 / RB 139.5 / RC 133, DC) <span class="badge bP">PROJECT</span></td></tr>
+<tr><td>R2</td><td>98.46 Ω</td></tr><tr><td>X1</td><td>32.42 Ω</td></tr><tr><td>X2</td><td>48.63 Ω</td></tr>
+<tr><td>Xm</td><td>583.94 Ω</td></tr><tr><td>X1+Xm</td><td>616.36 Ω</td></tr>
+<tr><td>No-load test</td><td>Vt 395 V, P 96 W, IL 0.37 A</td></tr>
+<tr><td>Blocked-rotor test</td><td>Vt 215 V, Pin 176 W, IL 0.5 A</td></tr>
+<tr><td>Apparent power S=√3·V·I</td><td>√3×380×0.50 ≈ 329 (VA) <span class="badge bP">PROJECT CALC</span></td></tr>
+<tr><td>Power factor (project)</td><td>120/329 ≈ 0.365 <span class="badge bP">PROJECT CALC</span></td></tr></table>
+<div id="ecdetail">Click R1 / jX1 / jXm / R2/s / jX2 for value, meaning, source and equation.</div></div></div>`;
+TABS.tq=`<div id="gwrap"><canvas id="tqg" style="width:100%;background:rgba(3,8,14,.9);border:1px solid rgba(90,130,165,.25);border-radius:8px" height="200"></canvas><div id="gtip"></div>
+<div class="note"><span class="badge bT">SOURCE DATA</span> markers: (0 RPM, 1.613 N·m starting), (breakdown, 1.715 N·m max), (1350 RPM, 0.755 N·m rated) — torqe.pdf.
+<span class="badge bM">CALCULATED MODEL</span> curve: project equivalent-circuit shape, amplitude-normalized so T(s=10%) = 0.755 N·m (norm factor shown in Sources). One source point does NOT define the curve; the curve is explicitly a model.</div></div>`;
+TABS.calc=`<div class="calc">
+<div class="card"><h3>SYNCHRONOUS SPEED & POLES</h3><div class="row lbl">f <input id="c_f" type="number" value="50"> Hz · P <input id="c_p" type="number" value="4"></div>
+<div class="out" id="o_ns">Ns = 120f/P = 1500 RPM</div><div class="note">This motor: 50 Hz+4P→1500; 60 Hz+4P→1800.</div></div>
+<div class="card"><h3>SLIP</h3><div class="row lbl">Ns <input id="c_ns" type="number" value="1500"> · Nr <input id="c_nr" type="number" value="1350"></div>
+<div class="out" id="o_slip">s = 10.000 % · Nr = Ns(1−s)</div></div>
+<div class="card"><h3>TORQUE / POWER / ω</h3><div class="row lbl">P <input id="c_pw" type="number" value="120"> W · N <input id="c_n" type="number" value="1350"> RPM</div>
+<div class="out" id="o_tq">ω = 141.37 rad/s · T = P/ω = 0.849 N·m</div>
+<div class="note" id="o_tqcmp">Compare: source torque 0.755 N·m @1350 RPM (torqe.pdf) → Δ = 0.094 N·m (preserved, not reconciled).</div></div>
+<div class="card"><h3>APPARENT POWER & PF (project condition)</h3><div class="row lbl">V<sub>L</sub> <input id="c_v" type="number" value="380"> · I<sub>L</sub> <input id="c_i" type="number" value="0.5"> · P <input id="c_pp" type="number" value="120"></div>
+<div class="out" id="o_s">S = √3·V·I = 329 VA · PF = P/S = 0.365</div><div class="note">Project Calculation label — not a universal motor constant.</div></div>
+<div class="card"><h3>WINDING FACTORS</h3><div class="row lbl">span <input id="c_sp" type="number" value="150"> °elec · q <input id="c_q" type="number" value="2"> · γ <input id="c_g" type="number" value="30"> °</div>
+<div class="out" id="o_kw">Kp = 0.9659 · Kd = 0.9659 · Kw = 0.9330</div></div>
+<div class="card"><h3>ANGULAR VELOCITY</h3><div class="row lbl">N <input id="c_w" type="number" value="1350"> RPM</div><div class="out" id="o_w">ω = 2πN/60 = 141.37 rad/s</div></div></div>`;
+TABS.test=`<div style="display:flex;gap:14px;flex-wrap:wrap">
+<div class="card" style="flex:1;min-width:300px"><h3>DC RESISTANCE <span class="badge bP">PROJECT</span></h3>
+<table class="dt"><tr><td>RA</td><td>≈137 Ω</td></tr><tr><td>RB</td><td>≈139.5 Ω</td></tr><tr><td>RC</td><td>≈133 Ω</td></tr>
+<tr><td>Average → R1</td><td>136.2 Ω (project notes winding Y-connected)</td></tr></table></div>
+<div class="card" style="flex:1;min-width:300px"><h3>NO-LOAD TEST <span class="badge bP">PROJECT</span></h3>
+<table class="dt"><tr><td>Vt</td><td>395 V</td></tr><tr><td>P loss</td><td>≈96 W</td></tr><tr><td>IL</td><td>0.37 A</td></tr>
+<tr><td>Use</td><td>separates core+friction loss; estimates Xm branch</td></tr></table></div>
+<div class="card" style="flex:1;min-width:300px"><h3>BLOCKED-ROTOR TEST <span class="badge bP">PROJECT</span></h3>
+<table class="dt"><tr><td>Vt</td><td>215 V</td></tr><tr><td>Pin</td><td>176 W</td></tr><tr><td>IL</td><td>0.5 A</td></tr>
+<tr><td>Use</td><td>leakage reactances & R2; scaled locked-rotor current anchor = 0.5×380/215 ≈ 0.884 A (phase, MODELLED anchor)</td></tr></table></div></div>`;
+TABS.src=`<div style="display:flex;gap:14px;flex-wrap:wrap">
+<div style="flex:1;min-width:330px"><h3 class="mono" style="color:var(--cyan2)">DATA SOURCES (hierarchy)</h3>
+<table class="dt"><tr><th>#</th><th>Source</th><th>Role</th></tr>
+<tr><td>1</td><td>Actual motor nameplate (user-supplied photo)</td><td>Primary operating data <span class="badge bN">NAMEPLATE DATA</span></td></tr>
+<tr><td>2</td><td>Project (1).pdf — winding & equivalent-circuit calculations</td><td>Winding, EC, tests <span class="badge bP">PROJECT-DERIVED</span></td></tr>
+<tr><td>3</td><td>torqe.pdf — torque vs speed</td><td>T=0.755 N·m @1350, Tmax 1.715, Tstart 1.613 <span class="badge bT">SOURCE TORQUE</span></td></tr>
+<tr><td>4</td><td>User reference screenshots</td><td>Visual/UI inspiration ONLY — their 7.5 kW / 400 V / 11.4 A / 31.7 N·m / 55.1 °C values are EXCLUDED</td></tr>
+<tr><td>5</td><td>Simulation internals</td><td>Dynamics, temperature, current interpolation <span class="badge bM">MODELLED</span>; field/airflow/thermal visuals <span class="badge bC">CONCEPTUAL</span></td></tr></table>
+<h3 class="mono" style="color:var(--cyan2);margin-top:10px">BADGE LEGEND</h3>
+<span class="badge bN">NAMEPLATE DATA</span><span class="badge bP">PROJECT-DERIVED</span><span class="badge bT">SOURCE TORQUE</span><span class="badge bM">MODELLED</span><span class="badge bC">CONCEPTUAL</span><span class="badge bI">ILLUSTRATIVE</span></div>
+<div style="flex:1;min-width:330px"><h3 class="mono" style="color:var(--cyan2)">VALIDATION / CONSISTENCY</h3>
+<div class="warn">⚠ DATA CONSISTENCY WARNING — TORQUE: source 0.755 N·m @1350 RPM vs nameplate-implied 0.849 N·m (120 W / 141.37 rad/s). Both preserved; simulation curve anchored to the SOURCE value, nameplate value displayed separately.</div>
+<div class="warn">⚠ DATA NOTE — CONDUCTORS/SLOT: calculated ≈266 vs original counted 265. Both preserved.</div>
+<div class="note">✔ Ns check: 120×50/4 = 1500 RPM consistent with 1350 RPM + 10% slip. ✔ 60 Hz: 1800 RPM consistent with 1620 RPM + 10% slip. ✔ Kw = Kp·Kd = 0.9659×0.9659 = 0.9330. ✔ Current model anchored to nameplate 0.50/0.86 A, no-load 0.37 A (scaled) and blocked-rotor 0.884 A (scaled).</div>
+<div class="note">Model normalization factor k = T_source(rated)/T_EC(rated) = <span class="mono" id="knorm"></span> (50 Hz). Simulation torque curve = project EC shape × k — labelled CALCULATED MODEL everywhere.</div>
+<div class="warn">⚠ ILLUSTRATIVE GEOMETRY: rotor diameter, stator bore, stack length, air-gap, rotor-bar & end-ring dimensions, material grades, bearing dimensions, thermal constants and inertia (J = 0.02 kg·m²) are NOT specified in supplied sources. 3D proportions and rotor bar count (24) are visually plausible normalized values only.</div></div></div>`;
+function renderTab(t){document.querySelectorAll('#tabbar [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  $('tabbody').innerHTML=TABS[t];hookTab(t);}
+document.querySelectorAll('#tabbar [data-tab]').forEach(b=>b.onclick=()=>renderTab(b.dataset.tab));
+function hookTab(t){
+ if(t==='wind'){let html='';for(let i=0;i<24;i++){const ph=slotPhase[i];
+   html+='<span class="'+(ph==='U'?'cU':ph==='V'?'cV':'cW')+'">['+i+':'+ph+']</span> ';}
+   const sm=$('slotmap');if(sm)sm.innerHTML=html;
+   document.querySelectorAll('.fact').forEach(f=>f.onclick=()=>{const k=f.dataset.f;
+     $('fdetail').innerHTML=k==='kp'?'<b>Pitch factor Kp</b> = sin(electrical span/2) = sin(150°/2) = sin 75° = 0.9659. Short-pitching chops the 30° of missing flux linkage per coil, killing harmonics.':
+      k==='kd'?'<b>Distribution factor Kd</b> = sin(qγ/2)/(q·sin(γ/2)), q = slots/pole/phase = 2, γ = 30° → 0.9659. Spreading coils over a phase belt reduces harmonic content.':
+      '<b>Winding factor Kw</b> = Kp × Kd = 0.9659 × 0.9659 = 0.9330. Effective series conductors = Kw × total; used in the project EMF/conductor calculation.';});}
+ if(t==='ec'){document.querySelectorAll('[data-ec]').forEach(g=>g.onclick=()=>{const k=g.dataset.ec;
+   const s=Math.max(0.0005,(nsOf(S.freq)-S.w*60/(2*Math.PI))/nsOf(S.freq));const kk=S.freq/50;
+   const D={R1:['Stator winding resistance (per phase, DC avg corrected)','136.2 Ω','Copper loss 3·I1²·R1','Project DC test: avg(137,139.5,133)','R1 = (RA+RB+RC)/3'],
+     X1:['Stator leakage reactance','32.42 Ω @50 Hz (scales with f)','Slot + end-winding leakage flux','Project blocked-rotor analysis','X1 = 0.4·Xblk (project split)'],
+     Xm:['Magnetizing reactance','583.94 Ω @50 Hz','Mutual flux path across air gap','Project no-load test','Xm = (X1+Xm) − X1 = 616.36 − 32.42'],
+     R2:['Rotor resistance referred to stator, divided by slip','R2 = 98.46 Ω → R2/s = '+(98.46/s).toFixed(1)+' Ω at s='+(s*100).toFixed(2)+'%','Mechanical load represented by R2(1−s)/s','Project blocked-rotor analysis','Pgap = 3·I2²·R2/s'],
+     X2:['Rotor leakage reactance referred','48.63 Ω @50 Hz','Rotor slot leakage flux','Project blocked-rotor analysis','X2 = 0.6·Xblk (project split)']};
+   $('ecdetail').innerHTML='<b style="color:var(--cyan2)">'+k+'</b><br>Meaning: '+D[k][0]+'<br>Value: '+D[k][1]+'<br>Role: '+D[k][2]+'<br>Source: '+D[k][3]+' <span class="badge bP">PROJECT-DERIVED</span><br>Equation: '+D[k][4];});}
+ if(t==='tq'){drawGraph();const cv=$('tqg');cv.onmousemove=ev=>{const r=cv.getBoundingClientRect();
+    const x=ev.clientX-r.left,y=ev.clientY-r.top;const g=graphGeom(cv);
+    const rpm=(x-g.x0)/g.w*g.xmax;const tip=$('gtip');
+    if(rpm<0||rpm>g.xmax){tip.style.display='none';return;}
+    const s=(nsOf(S.freq)-rpm)/nsOf(S.freq);const T=s<=0?0:EC[S.freq].TAt(s);
+    tip.style.display='block';tip.style.left=(x+14)+'px';tip.style.top=(y-10)+'px';
+    tip.textContent='Speed: '+Math.round(rpm)+' RPM\nSlip: '+(s*100).toFixed(2)+' %\nTorque(model): '+T.toFixed(3)+' N·m\nMech P: '+Math.max(0,T*rpm*2*Math.PI/60).toFixed(1)+' W\n% of Ns: '+(rpm/nsOf(S.freq)*100).toFixed(1)+' %';};
+   cv.onmouseleave=()=>{$('gtip').style.display='none';};}
+ if(t==='calc'){const up=()=>{const f=+$('c_f').value||50,P=+$('c_p').value||4;
+    $('o_ns').textContent='Ns = 120f/P = '+Math.round(120*f/P)+' RPM';
+    const ns=+$('c_ns').value||1500,nr=+$('c_nr').value||0;
+    $('o_slip').textContent='s = '+(((ns-nr)/ns)*100).toFixed(3)+' % · Nr = Ns(1−s) = '+nr+' RPM';
+    const pw=+$('c_pw').value||0,n=+$('c_n').value||1;const w=2*Math.PI*n/60;const T=pw/w;
+    $('o_tq').textContent='ω = '+w.toFixed(2)+' rad/s · T = P/ω = '+T.toFixed(3)+' N·m';
+    $('o_tqcmp').textContent='Compare: source torque 0.755 N·m @1350 RPM → Δ = '+Math.abs(T-0.755).toFixed(3)+' N·m (both preserved).';
+    const V=+$('c_v').value||380,I=+$('c_i').value||0.5,PP=+$('c_pp').value||0;const Sv=Math.sqrt(3)*V*I;
+    $('o_s').textContent='S = √3·V·I = '+Sv.toFixed(0)+' VA · PF = P/S = '+(PP/Sv).toFixed(3);
+    const sp=+$('c_sp').value||150,q=+$('c_q').value||2,gm=+$('c_g').value||30;
+    const Kp=Math.sin(sp*Math.PI/360),Kd=Math.sin(q*gm*Math.PI/360)/(q*Math.sin(gm*Math.PI/360));
+    $('o_kw').textContent='Kp = '+Kp.toFixed(4)+' · Kd = '+Kd.toFixed(4)+' · Kw = '+(Kp*Kd).toFixed(4);
+    $('o_w').textContent='ω = 2πN/60 = '+(2*Math.PI*(+$('c_w').value||0)/60).toFixed(2)+' rad/s';};
+   document.querySelectorAll('.calc input').forEach(i=>i.oninput=up);up();}
+ if(t==='src'){$('knorm').textContent=EC[50].kN.toFixed(4);}
+}
+/* ================= TORQUE-SPEED GRAPH ================= */
+function graphGeom(cv){const x0=52,y0=14,w=cv.clientWidth-x0-14,h=cv.height-y0-30;
+  return{x0,y0,w,h,xmax:nsOf(S.freq)*1.12,ymax:2.0};}
+function drawGraph(){const cv=$('tqg');if(!cv)return;const dpr=Math.min(devicePixelRatio,2);
+  cv.width=cv.clientWidth*dpr;const x=cv.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);
+  const W=cv.clientWidth,H=cv.height,g=graphGeom(cv);x.clearRect(0,0,W,H);
+  x.strokeStyle='rgba(90,130,165,.25)';x.fillStyle='#7d93a8';x.font='10px monospace';x.lineWidth=1;
+  for(let i=0;i<=5;i++){const gx=g.x0+g.w*i/5;x.beginPath();x.moveTo(gx,g.y0);x.lineTo(gx,g.y0+g.h);x.stroke();
+    x.fillText(Math.round(g.xmax*i/5)+'',gx-12,g.y0+g.h+14);}
+  for(let i=0;i<=4;i++){const gy=g.y0+g.h-g.h*i/4;x.beginPath();x.moveTo(g.x0,gy);x.lineTo(g.x0+g.w,gy);x.stroke();
+    x.fillText((g.ymax*i/4).toFixed(1),8,gy+3);}
+  x.fillText('Rotor Speed (RPM) →',g.x0+g.w/2-40,H-4);
+  x.save();x.translate(10,g.y0+g.h/2);x.rotate(-Math.PI/2);x.fillText('Torque (N·m)',-30,0);x.restore();
+  const X=r=>g.x0+r/g.xmax*g.w, Y=t=>g.y0+g.h-Math.min(t,g.ymax)/g.ymax*g.h;
+  // model curve
+  x.strokeStyle='#22d3ee';x.lineWidth=2;x.beginPath();
+  EC[S.freq].pts.forEach((p,i)=>{const rpm=nsOf(S.freq)*(1-p[0]);const t=p[1]*EC[S.freq].kN;
+    i?x.lineTo(X(rpm),Y(t)):x.moveTo(X(rpm),Y(t));});x.stroke();
+  // reference lines
+  x.setLineDash([5,4]);x.strokeStyle='rgba(255,255,255,.5)';
+  x.beginPath();x.moveTo(X(nsOf(S.freq)),g.y0);x.lineTo(X(nsOf(S.freq)),g.y0+g.h);x.stroke();
+  const nr=S.freq===50?1350:1620;x.strokeStyle='rgba(74,222,128,.7)';
+  x.beginPath();x.moveTo(X(nr),g.y0);x.lineTo(X(nr),g.y0+g.h);x.stroke();x.setLineDash([]);
+  x.fillStyle='#e2e8f0';x.fillText('Ns='+nsOf(S.freq),X(nsOf(S.freq))-24,g.y0+10);
+  x.fillStyle='#4ade80';x.fillText('Nr='+nr,X(nr)-20,g.y0+22);
+  // source markers
+  const srcPts=[[0,SRC.torquePdf.T_start,'Tstart'],[nsOf(S.freq)*(1-EC[S.freq].sMax),SRC.torquePdf.T_max,'Tmax'],
+    [S.freq===50?1350:1620,S.freq===50?SRC.torquePdf.T_rated:ratedTorqueSrc(60),'Trated']];
+  srcPts.forEach(p=>{x.fillStyle='#fb923c';x.beginPath();x.arc(X(p[0]),Y(p[1]),5,0,7);x.fill();
+    x.strokeStyle='#04070c';x.stroke();x.fillStyle='#fdba74';x.fillText(p[2]+' '+p[1],X(p[0])+8,Y(p[1])-6);});
+  // operating point
+  const rpmNow=S.w*60/(2*Math.PI), sNow=(nsOf(S.freq)-rpmNow)/nsOf(S.freq);
+  const Tnow=sNow<=0?0:EC[S.freq].TAt(sNow);
+  x.fillStyle='#fff';x.beginPath();x.arc(X(rpmNow),Y(Tnow),4,0,7);x.fill();
+  x.strokeStyle='#22d3ee';x.beginPath();x.arc(X(rpmNow),Y(Tnow),7,0,7);x.stroke();
+  x.fillStyle='#67e8f9';x.fillText('OPERATING',X(rpmNow)+10,Y(Tnow)+14);}
+/* ================= SIM LOOP ================= */
+let last=performance.now(),telAcc=0,graphAcc=0;
+const scope=$('scope'),sctx=scope.getContext('2d'),dial=$('dial'),dctx=dial.getContext('2d');
+function sizeScope(){scope.width=scope.clientWidth*dpr();dial.width=dial.clientWidth*dpr();}
+function dpr(){return Math.min(devicePixelRatio,2);}
+addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);
+  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();sizeScope();drawGraph();});
+function physics(dt){
+  const NsR=nsOf(S.freq), ws=NsR*2*Math.PI/60;
+  if(S.locked&&S.running){S.w=0;}
+  else if(S.running){
+    const s=Math.max(0,Math.min(1,(ws-S.w)/ws));
+    const Te=EC[S.freq].TAt(s);
+    const Tl=S.load*ratedTorqueSrc(S.freq)+(S.w>0?0.004:0);
+    S.w=Math.max(0,S.w+(Te-Tl)*dt/J_INERTIA);
+    if(S.w>ws*0.9995)S.w=ws*0.9995;
+  }else{S.w=Math.max(0,S.w-S.w*2.2*dt-0.05*dt);}
+  S.thetaE+=ws*dt*(S.running?1:0)* (1) ; // electrical angle of RMF (true rate for physics-consistent slip viz)
+  S.rotA+=S.w*dt; S.fanA+=S.w*dt;
+  // temperature (first-order, MODEL ESTIMATE)
+  const s2=Math.max(0.0005,(ws-S.w)/60/ (NsR/60) );const sNow=Math.max(0.0005,(ws-S.w)/ws);
+  const I=iLine(S.running?sNow:0,S.freq), V=vLine(S.freq,S.conn);
+  const Pin=S.running?Math.sqrt(3)*V*I*EC[S.freq].pfAt(sNow):0;
+  const Pm=S.running?EC[S.freq].TAt(sNow)*S.w:0;
+  const loss=S.running?Math.max(5,Pin-Pm+8):0;
+  const riseSS=loss*0.5, tau=45;
+  S.temp+=( (TAMB+riseSS) - S.temp )*Math.min(1,dt/tau);
+  if(S.temp>135)S.temp=135;
+  return{ws,sNow,Pin,Pm,I};
+}
+function animate(now){
+  requestAnimationFrame(animate);
+  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  if(tween){tween.t=Math.min(1,tween.t+dt*1.6);const e=tween.t<.5?2*tween.t*tween.t:1-Math.pow(-2*tween.t+2,2)/2;
+    const p=tween.p0.clone().lerp(tween.p1,e),t=tween.t0.clone().lerp(tween.t1,e);ctrl.set(p,t);
+    if(tween.t>=1)tween=null;}
+  ctrl.update(dt);
+  const R=physics(dt);
+  // rotations (visually slowed)
+  gRotor.rotation.x=S.rotA*VIS_ROT; gFan.rotation.x=S.fanA*VIS_ROT;
+  // RMF visuals
+  if(S.rmf){const fm=S.thetaE*VIS_ROT; // mechanical angle of field
+    rmfMain.position.set(0,0,0);
+    rmfMain.setDirection(new THREE.Vector3(0,Math.cos(fm),Math.sin(fm)));
+    phArrows.forEach((a,i)=>{const ax=a.userData.ax;const mag=Math.cos(S.thetaE*VIS_ELEC*50-ax);
+      a.position.set(0,0,0);const dir=new THREE.Vector3(0,Math.cos(ax),Math.sin(ax));
+      a.setDirection(mag>=0?dir:dir.negate());a.setLength(0.12+0.34*Math.abs(mag),0.1,0.06);});
+    const col=rmfPts.geometry.attributes.color;
+    for(let i=0;i<rmfN;i++){const a=i/rmfN*2*Math.PI;const v=Math.max(0,Math.cos(2*a-2*fm));
+      col.array[i*3]=0.1+v*0.2;col.array[i*3+1]=0.5+v*0.5;col.array[i*3+2]=0.6+v*0.4;}
+    col.needsUpdate=true;}
+  // cage induced currents
+  if(S.cage){const col=new THREE.Color();
+    for(let i=0;i<24;i++){const a=i*Math.PI/12+S.rotA*VIS_ROT*0;const th=i*Math.PI/12+S.rotA;
+      const v=Math.sin(2*th-S.thetaE)* Math.min(1,(R.sNow*10));
+      col.setHex(0xc4ccd4).lerp(new THREE.Color(v>=0?0xff8844:0x44aaff),Math.min(1,Math.abs(v)));
+      barIM.setColorAt(i,col);}
+    if(barIM.instanceColor)barIM.instanceColor.needsUpdate=true;}
+  // airflow
+  if(S.air&&S.w>1){const sp=0.4+1.6*(S.w/(nsOf(S.freq)*2*Math.PI/60));
+    for(let i=0;i<AIRN;i++){airV[i].x+=sp*dt;airV[i].a+=dt*1.5;
+      if(airV[i].x>1.3){airV[i].x=-1.35;airV[i].a=Math.random()*6.28;airV[i].r=0.68+Math.random()*0.14;}
+      airPos[i*3]=airV[i].x;airPos[i*3+1]=Math.cos(airV[i].a)*airV[i].r;airPos[i*3+2]=Math.sin(airV[i].a)*airV[i].r;}
+    airGeo.attributes.position.needsUpdate=true;}
+  // thermal
+  if(S.therm){hotSpots3D.forEach(h=>{const t=S.temp+h.o;const c=tempCol(t);
+    h.s.material.color.setHex(c);h.s.scale.setScalar(0.25+ (t-25)/110*0.75);});}
+  // scope
+  drawScope(R);drawDial(R,dt);
+  // telemetry DOM
+  telAcc+=dt;if(telAcc>0.12){telAcc=0;updTel(R);}
+  graphAcc+=dt;if(graphAcc>0.25){graphAcc=0;if($('tqg'))drawGraph();
+    const r2=$('r2s');if(r2)r2.textContent='R2/s='+(98.46/Math.max(0.0005,R.sNow)).toFixed(0);}
+  updAudio();
+  renderer.render(scene,camera);
+}
+function tempCol(t){if(t<45)return 0x3b82f6;if(t<65)return 0x22c55e;if(t<85)return 0xeab308;if(t<105)return 0xf97316;return 0xef4444;}
+function updTel(R){const Nr=S.w*60/(2*Math.PI),Ns=nsOf(S.freq);
+  $('tNr').textContent=fmt0(Nr);$('tNs').textContent=Ns;
+  $('tSlip').textContent=(R.sNow*100).toFixed(2);
+  $('tI').textContent=(S.running?R.I:0).toFixed(2);
+  $('tPin').textContent=fmt0(R.Pin);$('tPm').textContent=fmt0(R.Pm);
+  $('tT').textContent=(S.running?EC[S.freq].TAt(R.sNow):0).toFixed(3);
+  $('tTemp').textContent=S.temp.toFixed(1);
+  $('tF').textContent=S.freq;$('tV').textContent=vLine(S.freq,S.conn);$('tC').textContent=S.conn;
+  const st=S.locked&&S.running?'LOCKED ROTOR':S.running?(Nr<Ns*0.9*(1-EC[S.freq].sr)?'STARTING':'RUNNING'):(Nr>5?'COASTING':'STOPPED');
+  $('stTxt').textContent=st;
+  const col=st==='RUNNING'?'#4ade80':st==='STARTING'?'#fbbf24':st==='LOCKED ROTOR'?'#f87171':'#94a3b8';
+  $('stDot').style.background=col;$('stDot').style.color=col;
+  $('dialTxt').textContent='RMF '+Ns+' RPM • Rotor '+fmt0(Nr)+' RPM • Δ '+fmt0(Ns-Nr)+' RPM (slip speed)';}
+function drawScope(R){const w=scope.clientWidth,h=110,d=dpr();sctx.setTransform(d,0,0,d,0,0);
+  sctx.clearRect(0,0,w,h);sctx.strokeStyle='rgba(90,130,165,.2)';
+  for(let i=1;i<4;i++){sctx.beginPath();sctx.moveTo(0,h*i/4);sctx.lineTo(w,h*i/4);sctx.stroke();}
+  S.phE+=2*Math.PI*S.freq*0.02*(1/60)*16.7; // slowed time base
+  const amp=(S.running?R.I:0)/1.0;
+  [['U',0,'#ff4d6d'],['V',-2*Math.PI/3,'#ffd166'],['W',-4*Math.PI/3,'#4cc9f0']].forEach(p=>{
+    sctx.strokeStyle=p[2];sctx.lineWidth=1.6;sctx.beginPath();
+    for(let x=0;x<w;x++){const y=h/2-Math.sin(x/w*Math.PI*6+S.phE+p[1])*amp*(h*0.36);
+      x?sctx.lineTo(x,y):sctx.moveTo(x,y);}sctx.stroke();});}
+function drawDial(R,dt){const w=dial.clientWidth,h=150,d=dpr();dctx.setTransform(d,0,0,d,0,0);
+  dctx.clearRect(0,0,w,h);const cx=w/2,cy=h/2+8,r=Math.min(w,h)*0.36;
+  dctx.strokeStyle='rgba(90,130,165,.35)';dctx.beginPath();dctx.arc(cx,cy,r,0,7);dctx.stroke();
+  S.dialF+=nsOf(S.freq)*2*Math.PI/60*VIS_ROT*dt*(S.running?1:0);
+  S.dialR+=S.w*VIS_ROT*dt;
+  const needle=(a,col,len)=>{dctx.strokeStyle=col;dctx.lineWidth=3;dctx.beginPath();dctx.moveTo(cx,cy);
+    dctx.lineTo(cx+Math.cos(a)*len,cy+Math.sin(a)*len);dctx.stroke();};
+  needle(S.dialF-Math.PI/2,'#22d3ee',r);needle(S.dialR-Math.PI/2,'#fb923c',r*0.72);
+  dctx.fillStyle='#67e8f9';dctx.font='10px monospace';dctx.fillText('RMF (field)',8,14);
+  dctx.fillStyle='#fdba74';dctx.fillText('Rotor',8,26);
+  dctx.fillStyle='#7d93a8';dctx.fillText('relative drift = slip',8,h-6);}
+/* ================= INIT ================= */
+setConn('Y');setFreq(50);setLoad(1.0);renderTab('data');sizeScope();goCam('iso');
+requestAnimationFrame(t=>{last=t;animate(t);});
+})();
+</script>
+</body>
+</html>
